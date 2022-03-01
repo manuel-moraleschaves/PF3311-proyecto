@@ -105,3 +105,33 @@ red_vial = red_vial[["categoria", "geometry"]].copy()
 lista_categorias = red_vial.categoria.unique().tolist()
 lista_categorias.sort()
 filtro_categoria = st.sidebar.selectbox('Seleccione la categoría de la red vial', lista_categorias)
+
+
+
+##################
+# 2. PROCESAMIENTO
+##################
+
+# Filtrado
+red_vial = red_vial[red_vial['categoria'] == filtro_categoria]
+
+# Intersección entre la capa de cantones y la capa de registros de la red vial
+cantones_red_vial = cantones.overlay(red_vial, how='intersection', keep_geom_type=False)
+
+# Se calcula la longitud de cada red vial. Se divide entre mil para convertirlo a km
+cantones_red_vial["longitud_km"] = cantones_red_vial.length / 1000
+
+# Se agrupan los registros por cantón para sumar su longitud
+cantones_red_vial = cantones_red_vial.groupby(["canton"]).longitud_km.sum()
+
+# Se convierte la serie a Dataframe
+cantones_red_vial = cantones_red_vial.reset_index() 
+
+# Join para agregar la columna de la longitud de la red vial
+cantones_red_vial = cantones.join(cantones_red_vial.set_index('canton'), on='canton')
+
+# Se coloca en 0 la longitud de la red vial en los cantones que tienen nulo
+cantones_red_vial["longitud_km"] = cantones_red_vial.longitud_km.fillna(0)
+
+# Se calcula la densidad de la red vial para cada cantón
+cantones_red_vial['densidad_vial'] = round(cantones_red_vial.longitud_km / cantones_red_vial.area_km2, 2) # se redondea a dos decimales
