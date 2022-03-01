@@ -135,3 +135,114 @@ cantones_red_vial["longitud_km"] = cantones_red_vial.longitud_km.fillna(0)
 
 # Se calcula la densidad de la red vial para cada cantón
 cantones_red_vial['densidad_vial'] = round(cantones_red_vial.longitud_km / cantones_red_vial.area_km2, 2) # se redondea a dos decimales
+
+
+
+############
+# 3. SALIDAS
+############
+
+#
+# Tabla de cantones con longitud y densidad de la red vial
+#
+
+# Dataframe con nombre de columnas más representativo
+tabla_cantones = cantones_red_vial[['canton', 'longitud_km', 'densidad_vial']].rename(columns = {'canton':'Cantón', 'longitud_km':'Longitud (km)', 'densidad_vial':'Densidad red vial'})
+
+# Para mostrar el índice del cantón de 1 a 82
+tabla_cantones.index += 1
+
+st.header('Longitud de las vías y densidad de la red vial en cada cantón')
+st.dataframe(tabla_cantones)
+
+
+# Definición de columnas
+col1, col2 = st.columns(2)
+
+#
+# Gráfico de barras con la longitud de la categoría de vías seleccionada 
+#
+with col1:
+
+    # Dataframe filtrado para usar en graficación
+    cantones_red_vial_grafico = cantones_red_vial.loc[cantones_red_vial['longitud_km'] > 0, 
+                                                     ["canton", "longitud_km"]].sort_values("longitud_km", ascending=[False]).head(15)
+    
+    # Se establece el canton como el índice
+    cantones_red_vial_grafico = cantones_red_vial_grafico.set_index('canton')  
+                                                  
+    st.header('Longitud de las vías')
+
+    # Se crea y se personaliza el gráfico de barras
+    fig = px.bar(cantones_red_vial_grafico, 
+                labels={'canton':'Cantones de CR', 'value':'Longitud de la red vial (km)', 'variable':'Categoría de red vial'})
+
+    fig.data[0].name = filtro_categoria
+        
+    fig.update_traces(hovertemplate='Cantón = %{x} <br>Longitud red vial (km) = %{y}')
+
+    # Se muestra el gráfico
+    st.plotly_chart(fig) 
+
+#
+# Gráfico de pastel con el porcentaje de red vial
+# 
+with col2:    
+
+    # Dataframe filtrado para usar en graficación
+    cantones_red_vial_grafico = cantones_red_vial.sort_values("longitud_km", ascending=[False]).head(15)[["canton", "longitud_km"]]
+
+    # Se obtiene la suma de la longitud de la red vial de los 67 cantones restantes 
+    suma_restantes = cantones_red_vial.sort_values("longitud_km", ascending=[True]).head(len(cantones) - 15).longitud_km.sum()
+
+    # Se agrega el registro de los otros cantones al Dataframe
+    cantones_red_vial_grafico.loc[-1] = ["Otros cantones", suma_restantes]
+
+    st.header('Porcentaje de red vial')
+
+    # Se crea y se personaliza el gráfico de pastel
+    fig = px.pie(cantones_red_vial_grafico, 
+                names=cantones_red_vial_grafico.canton,
+                values='longitud_km')
+
+    fig.update_traces(textposition='inside', textinfo='percent+label', hovertemplate='Cantón = %{label}<br>Longitud red vial (km) = %{value}')
+
+    # Se muestra el gráfico
+    st.plotly_chart(fig)    
+
+
+#
+# Mapa con las Líneas de la red vial y capa de coropletas
+#
+
+st.header('Líneas y densidad de la red vial')
+
+# Creación del mapa base con el control de escala
+m = folium.Map(location=[9.8, -84.2],
+               tiles='CartoDB positron',
+               width=650,
+               zoom_start=8,
+               control_scale=True)
+
+# Se añade al mapa la capa de coropletas
+folium.Choropleth(
+    name="Densidad de la red vial",
+    geo_data=cantones,
+    data=cantones_red_vial,
+    columns=['canton', 'densidad_vial'],
+    bins=8,
+    key_on='feature.properties.canton',
+    fill_color='Reds', 
+    fill_opacity=0.5, 
+    line_opacity=1,
+    legend_name='Densidad de la red vial',
+    smooth_factor=0).add_to(m)
+
+# Se añade al mapa la capa de la red vial
+folium.GeoJson(data=red_vial, name='Líneas de la red vial').add_to(m)
+
+# Control de capas
+folium.LayerControl().add_to(m)
+
+# Despliegue del mapa
+folium_static(m)   
