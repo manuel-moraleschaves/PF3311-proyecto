@@ -167,18 +167,26 @@ cantones_red_vial['densidad_vial'] = round(cantones_red_vial.longitud_km / canto
 # 3. SALIDAS
 ############
 
+# Definición de columnas
+col1, col2, col3 = st.columns([2, 4, 2])
+
 #
 # Tabla de cantones con longitud y densidad de la red vial
 #
 
-# Dataframe con nombre de columnas más representativo
-tabla_cantones = cantones_red_vial[['canton', 'longitud_km', 'densidad_vial']].rename(columns = {'canton':'Cantón', 'longitud_km':'Longitud (km)', 'densidad_vial':'Densidad red vial'})
+with col2:
+    # Dataframe con nombre de columnas más representativo
+    tabla_cantones = cantones_red_vial[['canton', 'longitud_km', 'densidad_vial']].rename(columns = {'canton':'Cantón', 'longitud_km':'Longitud (km)', 'densidad_vial':'Densidad red vial'})
 
-# Para mostrar el índice del cantón de 1 a 82
-tabla_cantones.index += 1
+    # Para mostrar el índice del cantón de 1 a 82
+    tabla_cantones.index += 1 
 
-st.header('Longitud de las vías y densidad de la red vial en cada cantón')
-st.dataframe(tabla_cantones)
+    st.header('Longitud de las vías y densidad de la red vial en cada cantón')
+
+    st.dataframe(tabla_cantones, 600, 450)
+
+
+st.markdown('')
 
 
 # Definición de columnas
@@ -236,16 +244,22 @@ with col2:
     st.plotly_chart(fig)    
 
 
+st.markdown('')
+
+
+# Definición de columnas
+col1, col2, col3 = st.columns([2, 4, 2])
+
+with col2:
+    st.header('Líneas y densidad de la red vial')
+
 #
 # Mapa con las Líneas de la red vial y capa de coropletas
 #
 
-st.header('Líneas y densidad de la red vial')
-
 # Creación del mapa base con el control de escala
 m = folium.Map(location=[9.8, -84.2],
                tiles='CartoDB positron',
-               width=650,
                zoom_start=8,
                control_scale=True)
 
@@ -270,4 +284,4 @@ folium.GeoJson(data=red_vial, name='Líneas de la red vial').add_to(m)
 folium.LayerControl().add_to(m)
 
 # Despliegue del mapa
-folium_static(m)   
+folium_static(m, width=1100, height=600)   
